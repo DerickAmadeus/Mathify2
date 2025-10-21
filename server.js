@@ -1,62 +1,66 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-const User = require('./models/user');
 
+// Load environment variables
 dotenv.config();
 
+// Import configurations and middleware
+const connectDB = require('./src/config/database');
+const cleanUrlMiddleware = require('./src/middleware/cleanUrl');
+
+// Import routes
+const usersRouter = require('./src/routes/users');
+
+// Initialize Express app
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Parse JSON bodies
-app.use(express.json());
+// Middleware
+app.use(express.json()); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-// Serve static files from the `public` folder (change if your static files are elsewhere)
+// Serve static files from public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Root: redirect to login or other entry page
+// Clean URL middleware (serve HTML without .html extension)
+app.use(cleanUrlMiddleware);
+
+// Routes
 app.get('/', (req, res) => {
-  res.redirect('/calculator.html');
+  res.redirect('/calculator');
 });
 
-// Simple API to test DB
-app.post('/api/users', async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    const user = new User({ name, email });
-    await user.save();
-    res.status(201).json(user);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// API Routes
+app.use('/api/users', usersRouter);
 
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Connect to MongoDB using MONGO_URI from .env or fallback to local
-const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mydatabase';
-mongoose.connect(mongoUri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('Connected to MongoDB');
-
-  // Start server only after DB connects
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-  });
-}).catch(err => {
-  console.error('MongoDB connection error:', err.message);
-  // Still start server so static files are available even if DB is down
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port} (DB not connected)`);
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Not Found',
+    message: `Cannot ${req.method} ${req.path}` 
   });
 });
+
+// Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: err.message 
+  });
+});
+
+// Start server
+const startServer = async () => {
+  // Try to connect to MongoDB
+  await connectDB();
+
+  // Start Express server (even if DB fails)
+  app.listen(port, () => {
+    console.log(`🚀 Server running at http://localhost:${port}`);
+    console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+};
+
+startServer();
