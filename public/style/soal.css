@@ -1,0 +1,206 @@
+/* Soal Page Specific Styles */
+
+/* Soal Container - Grid Layout */
+.soal-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Soal Box Card */
+.soal-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.soal-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.6);
+}
+
+/* Soal Header */
+.soal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.soal-judul {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.soal-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Soal Body */
+.soal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.soal-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.soal-progress,
+.soal-timer {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.soal-icon {
+    width: 24px;
+    height: 24px;
+    color: #667eea;
+    flex-shrink: 0;
+}
+
+/* Soal Button */
+.soal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.soal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.soal-btn:active {
+    transform: translateY(0);
+}
+
+.soal-btn.active {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    cursor: not-allowed;
+}
+
+.soal-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* Soal Section */
+.soal-section {
+    width: 100%;
+    padding: 2rem 1rem;
+}
+
+.soal-section h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .soal-container {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 1rem;
+    }
+    
+    .soal-box {
+        padding: 1rem;
+    }
+    
+    .soal-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .soal-judul {
+        font-size: 1.25rem;
+    }
+    
+    .soal-badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .soal-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .soal-info {
+        gap: 0.75rem;
+    }
+    
+    .soal-progress,
+    .soal-timer {
+        font-size: 0.875rem;
+        padding: 0.6rem;
+    }
+    
+    .soal-icon {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .soal-btn {
+        padding: 0.875rem;
+        font-size: 0.875rem;
+    }
+}
