@@ -1,12 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const { supabase } = require('../config/supabase');
 
 // GET all users
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json(data || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -16,9 +22,16 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, email } = req.body;
-    const user = new User({ name, email });
-    await user.save();
-    res.status(201).json(user);
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ name, email }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json(data);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -27,11 +40,19 @@ router.post('/', async (req, res) => {
 // GET user by ID
 router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.params.id)
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -41,15 +62,21 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { name, email } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { name, email },
-      { new: true, runValidators: true }
-    );
-    if (!user) {
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({ name, email })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+
+    res.json(data);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -58,10 +85,13 @@ router.put('/:id', async (req, res) => {
 // DELETE user
 router.delete('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', req.params.id);
+
+    if (error) throw error;
+
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });

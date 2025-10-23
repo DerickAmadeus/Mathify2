@@ -6,7 +6,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import configurations and middleware
-const connectDB = require('./src/config/database');
+const { connectDB } = require('./src/config/supabase');
 const cleanUrlMiddleware = require('./src/middleware/cleanUrl');
 
 // Import routes
@@ -28,7 +28,7 @@ app.use(cleanUrlMiddleware);
 
 // Routes
 app.get('/', (req, res) => {
-  res.redirect('/calculator');
+  res.redirect('/login');
 });
 
 // API Routes
