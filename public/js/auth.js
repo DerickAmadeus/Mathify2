@@ -5,6 +5,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
   checkAuthAndProtectPage();
+  initializeDropdownMenu();
 });
 
 /**
@@ -25,9 +26,19 @@ function checkAuthAndProtectPage() {
     console.log('✅ Logged in as:', userData.username);
     
     // Update user name in UI if element exists
-    const userNameEl = document.querySelector('.user-name');
+    const userNameEl = document.querySelector('#user-name-display');
     if (userNameEl) {
       userNameEl.textContent = userData.username;
+    }
+    
+    // Update dropdown user info
+    const dropdownUsername = document.querySelector('#dropdown-username');
+    const dropdownEmail = document.querySelector('#dropdown-email');
+    if (dropdownUsername) {
+      dropdownUsername.textContent = userData.username;
+    }
+    if (dropdownEmail) {
+      dropdownEmail.textContent = userData.email || 'No email';
     }
     
     return userData;
@@ -37,6 +48,33 @@ function checkAuthAndProtectPage() {
     window.location.href = '/login';
     return false;
   }
+}
+
+/**
+ * Initialize dropdown menu toggle functionality
+ */
+function initializeDropdownMenu() {
+  const toggle = document.querySelector('#user-account-toggle');
+  const menu = document.querySelector('#user-dropdown-menu');
+  
+  if (!toggle || !menu) {
+    console.warn('⚠️ Dropdown menu elements not found');
+    return;
+  }
+  
+  // Toggle dropdown on header click
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const isVisible = menu.style.display !== 'none';
+    menu.style.display = isVisible ? 'none' : 'block';
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.user-account-wrapper')) {
+      menu.style.display = 'none';
+    }
+  });
 }
 
 /**
