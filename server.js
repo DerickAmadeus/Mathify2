@@ -8,6 +8,7 @@ dotenv.config();
 // Import configurations and middleware
 const { connectDB } = require('./src/config/supabase');
 const cleanUrlMiddleware = require('./src/middleware/cleanUrl');
+const { swaggerUi, specs } = require('./src/config/swagger');
 
 // Import routes
 const usersRouter = require('./src/routes/users');
@@ -25,6 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Clean URL middleware (serve HTML without .html extension)
 app.use(cleanUrlMiddleware);
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.get('/', (req, res) => {
