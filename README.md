@@ -58,17 +58,6 @@ cd Mathify2
 npm install
 ```
 
-3. Create `.env` file (copy from `.env.example`):
-```bash
-cp .env.example .env
-```
-
-4. Edit `.env` with your configuration:
-```
-MONGO_URI=mongodb://127.0.0.1:27017/mydatabase
-PORT=3000
-```
-
 ### Running the Server
 
 **Development mode:**
@@ -93,19 +82,6 @@ Server will start at: `http://localhost:3000`
 - `/login` - Login page
 
 ### API Endpoints
-
-#### Users API (`/api/users`)
-- `GET /api/users` - Get all users
-- `POST /api/users` - Create new user
-  ```json
-  {
-    "name": "John Doe",
-    "email": "john@example.com"
-  }
-  ```
-- `GET /api/users/:id` - Get user by ID
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
 
 ## 📝 Development
 
@@ -157,11 +133,6 @@ Server will start at: `http://localhost:3000`
 **Local MongoDB:**
 ```
 MONGO_URI=mongodb://127.0.0.1:27017/mydatabase
-```
-
-**MongoDB Atlas:**
-```
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/mydatabase
 ```
 
 ## 🤝 Contributing
