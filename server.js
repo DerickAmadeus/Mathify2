@@ -57,14 +57,20 @@ app.use((err, req, res, next) => {
 
 // Start server
 const startServer = async () => {
-  // Try to connect to MongoDB
-  await connectDB();
+  try {
+    // Connect to Supabase
+    await connectDB();
 
-  // Start Express server (even if DB fails)
-  app.listen(port, () => {
-    console.log(`🚀 Server running at http://localhost:${port}`);
-    console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
+    // Start Express server
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📚 API Docs: http://localhost:${port}/api-docs`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err.message);
+    process.exit(1);
+  }
 };
 
 startServer();

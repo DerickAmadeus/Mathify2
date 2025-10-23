@@ -5,7 +5,6 @@
     <link rel="icon" type="image/png" href="../img/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="../css/login.css">
-    <script src="../js/login.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mathify - Login</title>
 </head>
@@ -67,6 +66,8 @@
                         <input type="password" id="password" name="password" placeholder="Enter your password" required>
                     </div>
                 </div>
+                
+                <div id="error-message" class="error-message" style="display:none;"></div>
 
                 <div class="form-options">
                     <a href="#" class="forgot-link">Forgot Password?</a>
@@ -86,5 +87,8 @@
             </p>
         </div>
     </div>
+
+    <!-- Login script (at end of body so DOM is ready) -->
+    <script src="../js/login.js"></script>
 </body>
 </html>
