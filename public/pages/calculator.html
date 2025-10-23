@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="../img/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
-    <script src="../js/calculator.js"></script>
-    <script src="../js/sidebar.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mathify - Calculator</title>
 </head>
@@ -16,14 +14,34 @@
         <div class="top-bar-content">
             <div class="top-bar-left">
                 <h1 class="top-bar-title">Mathify</h1>
-                <img src="/img/logo.png" alt="Mathify Logo" class="top-bar-logo">
+                <img src="../img/logo.png" alt="Mathify Logo" class="top-bar-logo">
             </div>
             <div class="top-bar-right">
                 <div class="user-account">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="user-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span class="user-name">Account</span>
+                    <!-- User Account Dropdown Partial -->
+                    <div class="user-account-wrapper">
+                        <div class="user-account-header" id="user-account-toggle">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="user-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span class="user-name" id="user-name-display">Account</span>
+                        </div>
+                        
+                        <!-- Dropdown Menu -->
+                        <div class="user-dropdown-menu" id="user-dropdown-menu" style="display: none;">
+                            <div class="dropdown-header">
+                                <div class="dropdown-username" id="dropdown-username">Username</div>
+                                <div class="dropdown-email" id="dropdown-email">email@example.com</div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-logout" onclick="logout()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="logout-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -131,5 +149,11 @@
     </div>
     </div>
 
+    <!-- Auth & Protection -->
+    <script src="../js/auth.js"></script>
+    
+    <!-- Page-specific scripts -->
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/calculator.js"></script>
 </body>
 </html>

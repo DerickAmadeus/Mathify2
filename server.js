@@ -8,6 +8,7 @@ dotenv.config();
 // Import configurations and middleware
 const { connectDB } = require('./src/config/supabase');
 const cleanUrlMiddleware = require('./src/middleware/cleanUrl');
+const { swaggerUi, specs } = require('./src/config/swagger');
 
 // Import routes
 const usersRouter = require('./src/routes/users');
@@ -25,6 +26,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Clean URL middleware (serve HTML without .html extension)
 app.use(cleanUrlMiddleware);
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Routes
 app.get('/', (req, res) => {
@@ -53,14 +57,20 @@ app.use((err, req, res, next) => {
 
 // Start server
 const startServer = async () => {
-  // Try to connect to MongoDB
-  await connectDB();
+  try {
+    // Connect to Supabase
+    await connectDB();
 
-  // Start Express server (even if DB fails)
-  app.listen(port, () => {
-    console.log(`🚀 Server running at http://localhost:${port}`);
-    console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
+    // Start Express server
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📚 API Docs: http://localhost:${port}/api-docs`);
+    });
+  } catch (err) {
+    console.error('❌ Failed to start server:', err.message);
+    process.exit(1);
+  }
 };
 
 startServer();
