@@ -394,39 +394,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/auth/login
-router.post('/auth/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    
-    // Validasi input
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username dan password harus diisi' });
-    }
-    
-    // Query user dari database
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .single();
-    
-    if (error || !user) {
-      return res.status(401).json({ error: 'Username atau password salah' });
-    }
-    
-    // Check password (simple, nanti bisa pakai bcrypt)
-    if (user.password !== password) {
-      return res.status(401).json({ error: 'Username atau password salah' });
-    }
-    
-    // Return user data (nanti bisa tambah token/session)
-    res.json({
-      success: true,
-      user: { id: user.id, username: user.username, email: user.email }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 module.exports = router;

@@ -12,6 +12,7 @@ const { swaggerUi, specs } = require('./src/config/swagger');
 
 // Import routes
 const usersRouter = require('./src/routes/users');
+const modulesRouter = require('./src/routes/modules');
 
 // Initialize Express app
 const app = express();
@@ -37,6 +38,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/users', usersRouter);
+app.use('/api/modules', modulesRouter);
 
 // 404 Handler
 app.use((req, res) => {
