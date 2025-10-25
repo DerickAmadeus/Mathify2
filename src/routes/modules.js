@@ -285,7 +285,7 @@ router.post('/:id/progress', async (req, res) => {
     // Check if progress already exists
     const { data: existing } = await supabase
       .from('user_module_progress')
-      .select('id')
+      .select('*')
       .eq('module_id', moduleId)
       .eq('user_id', user_id)
       .single();
@@ -341,6 +341,44 @@ router.post('/:id/progress', async (req, res) => {
     });
   } catch (err) {
     console.error('Error saving progress:', err);
+    res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/modules/:id/progress
+ * Delete user progress for a module (restart functionality)
+ */
+router.delete('/:id/progress', async (req, res) => {
+  try {
+    const { id: moduleId } = req.params;
+    const { user_id } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      });
+    }
+
+    // Delete progress
+    const { error } = await supabase
+      .from('user_module_progress')
+      .delete()
+      .eq('module_id', moduleId)
+      .eq('user_id', user_id);
+
+    if (error) throw error;
+
+    res.json({
+      success: true,
+      message: 'Progress deleted successfully'
+    });
+  } catch (err) {
+    console.error('Error deleting progress:', err);
     res.status(400).json({
       success: false,
       error: err.message

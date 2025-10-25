@@ -11,23 +11,30 @@ class Timer {
         this.isPaused = false;
         this.moduleId = null;
         this.userId = null;
+        this.lastSaveTime = Date.now();
+        this.saveInterval = 10000; // Save every 10 seconds
     }
 
     start(callback) {
         if (this.intervalId) return; // Already running
         
         this.isPaused = false;
+        this.lastSaveTime = Date.now(); // Reset save timer
+        
         this.intervalId = setInterval(() => {
             if (!this.isPaused) {
-                this.remainingSeconds--;
+                // Prevent negative values
+                this.remainingSeconds = Math.max(0, this.remainingSeconds - 1);
                 
                 if (this.remainingSeconds <= 0) {
                     this.stop();
                     this.saveProgress('completed');
                 } else {
-                    // Auto-save progress every 10 seconds
-                    if (this.remainingSeconds % 10 === 0) {
+                    // Auto-save based on time elapsed, not modulo
+                    const now = Date.now();
+                    if (now - this.lastSaveTime >= this.saveInterval) {
                         this.saveProgress('in_progress');
+                        this.lastSaveTime = now;
                     }
                 }
                 
@@ -179,6 +186,19 @@ function getDifficultyColor(difficulty) {
 }
 
 /**
+ * Escape HTML to prevent XSS attacks
+ */
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+/**
  * Generate module boxes from API data
  */
 async function generateModuleBoxes(modules) {
@@ -198,6 +218,19 @@ async function generateModuleBoxes(modules) {
 
     const userId = getCurrentUserId();
 
+    // Fetch all progress data in parallel instead of one by one
+    let progressMap = new Map();
+    if (userId) {
+        const progressPromises = modules.map(m => 
+            fetchProgress(m.id, userId).then(p => ({ moduleId: m.id, progress: p }))
+        );
+        const progressResults = await Promise.all(progressPromises);
+        progressResults.forEach(({ moduleId, progress }) => {
+            if (progress) progressMap.set(moduleId, progress);
+        });
+    }
+
+    // Now render all modules with their progress
     for (const module of modules) {
         const box = document.createElement('div');
         box.className = 'soal-box';
@@ -206,11 +239,8 @@ async function generateModuleBoxes(modules) {
         const buttonId = `btn-${module.id}`;
         const difficultyColor = getDifficultyColor(module.difficulty);
         
-        // Fetch progress for this module
-        let progress = null;
-        if (userId) {
-            progress = await fetchProgress(module.id, userId);
-        }
+        // Get progress from map
+        const progress = progressMap.get(module.id) || null;
 
         const isInProgress = progress && progress.status === 'in_progress';
         const isPaused = progress && progress.status === 'paused';
@@ -239,13 +269,13 @@ async function generateModuleBoxes(modules) {
         
         box.innerHTML = `
             <div class="soal-header">
-                <h3 class="soal-judul">${module.title}</h3>
+                <h3 class="soal-judul">${escapeHtml(module.title)}</h3>
                 <span class="soal-badge" style="background: ${difficultyColor}">
-                    ${module.difficulty || 'Medium'}
+                    ${escapeHtml(module.difficulty || 'Medium')}
                 </span>
             </div>
             <div class="soal-body">
-                ${module.description ? `<p class="soal-description" style="margin-bottom: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">${module.description}</p>` : ''}
+                ${module.description ? `<p class="soal-description" style="margin-bottom: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">${escapeHtml(module.description)}</p>` : ''}
                 <div class="soal-info">
                     <div class="soal-progress">
                         <svg xmlns="http://www.w3.org/2000/svg" class="soal-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -274,19 +304,51 @@ async function generateModuleBoxes(modules) {
         
         // Auto-resume if was in progress
         if (isInProgress && progress) {
+            // Add flag to prevent race condition with user clicks
+            const button = document.getElementById(buttonId);
+            if (button) button.disabled = true;
+            
             setTimeout(() => {
-                startModule(module.id, module.duration_minutes, timerId, buttonId, progress.remaining_seconds);
+                if (button) button.disabled = false;
+                // Check again if timer already exists (user might have clicked during delay)
+                if (!activeTimers.has(module.id)) {
+                    startModule(module.id, module.duration_minutes, timerId, buttonId, progress.remaining_seconds);
+                }
             }, 500);
         }
     }
 }
 
 /**
- * Handle module button click (start/pause/resume)
+ * Handle module button click (start/pause/resume/restart)
  */
-function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
+async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
     const timer = activeTimers.get(moduleId);
     const button = document.getElementById(buttonId);
+    
+    // Check if button is "Ulangi" (completed status)
+    if (button && button.textContent.trim() === 'Ulangi') {
+        try {
+            // Delete progress from database
+            const userData = localStorage.getItem('user');
+            if (!userData) return;
+            
+            const user = JSON.parse(userData);
+            const response = await fetch(`/api/modules/${moduleId}/progress?user_id=${user.id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                // Reload modules to reset the UI
+                loadModules();
+            } else {
+                console.error('Failed to delete progress');
+            }
+        } catch (error) {
+            console.error('Error restarting module:', error);
+        }
+        return;
+    }
     
     if (timer) {
         // Timer exists - toggle pause/resume
