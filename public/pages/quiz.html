@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="../img/logo.png">
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/quiz.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathify - Quiz</title>
+</head>
+
+<body class="quiz-page">
+    <!-- Top Bar with Title -->
+    <div class="quiz-top-bar">
+        <div class="quiz-top-content">
+            <div class="quiz-title-section">
+                <h1 class="quiz-main-title" id="quizTitle">Loading Quiz...</h1>
+                <div class="quiz-breadcrumb">
+                    <span>Home</span>
+                    <span class="separator">›</span>
+                    <span>My courses</span>
+                    <span class="separator">›</span>
+                    <span>Modules</span>
+                    <span class="separator">›</span>
+                    <span id="breadcrumbModule">Quiz</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="quiz-main-container">
+        <!-- Left Panel: Question -->
+        <div class="quiz-left-panel">
+            <!-- Question Status Bar -->
+            <div class="question-status-bar">
+                <div class="question-info">
+                    <span class="question-number">Question <span id="currentQuestionNumber">8</span></span>
+                    <span class="not-answered-badge" id="statusBadge">Not yet answered</span>
+                    <span class="marked-text">Marked out of 1.00</span>
+                </div>
+                <button class="flag-button" id="flagButton">
+                    <span class="flag-icon">🚩</span>
+                    <span>Flag question</span>
+                </button>
+            </div>
+
+            <!-- Question Content -->
+            <div class="question-content-box">
+                <h2 class="question-title">Hasil limit</h2>
+                
+                <div class="question-formula-box">
+                    <p id="questionFormula">
+                        $$\lim_{(x,y)\to(0,0)} \frac{3x^2 + x^2y + 3y^2 + y^3}{x^2 + y^2} = A$$
+                    </p>
+                </div>
+
+                <div class="question-instruction">
+                    <p>Maka <span class="inline-math">$A =$</span></p>
+                    <input 
+                        type="text" 
+                        id="answerInput" 
+                        class="answer-input-box"
+                        placeholder="Masukkan jawaban..."
+                        autocomplete="off"
+                    />
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="quiz-navigation-buttons">
+                <button class="quiz-nav-btn previous-btn" id="previousBtn">
+                    ← Previous page
+                </button>
+                <button class="quiz-nav-btn next-btn" id="nextBtn">
+                    Next page →
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Graph and Navigation Grid -->
+        <div class="quiz-right-panel">
+            <!-- Mini Graph Preview -->
+            <div class="mini-graph-box">
+                <div class="graph-title-bar">
+                    <span class="graph-title">Graph Preview</span>
+                    <span class="graph-status-text" id="graphStatusText">No input</span>
+                </div>
+                <div class="graph-canvas-container">
+                    <canvas id="miniGraphCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Quiz Navigation Grid -->
+            <div class="quiz-navigation-grid">
+                <h3 class="grid-title">Quiz navigation</h3>
+                <div class="question-grid" id="questionGrid">
+                    <!-- Question buttons 1-10 will be generated here -->
+                </div>
+                <div class="finish-section">
+                    <button class="finish-attempt-btn" id="finishAttemptBtn">
+                        Finish attempt ...
+                    </button>
+                </div>
+                <div class="time-left-section">
+                    <span class="time-left-label">Time left</span>
+                    <span class="time-left-value" id="timeLeftValue">04:17</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/quiz.js"></script>
+</body>
+</html>
