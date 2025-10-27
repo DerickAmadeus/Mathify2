@@ -422,6 +422,293 @@ function startModule(moduleId, durationMinutes, timerId, buttonId, remainingSeco
     updateButton(button, 'Pause', 'M10 9v6m4-6v6');
     
     console.log(`Started module ${moduleId}`);
+    showQuestions(moduleId);
+}
+
+/**
+ * Fetch and display questions for selected module
+ */
+/**
+ * Fetch and display questions for selected module (robust version)
+ */
+
+async function showQuestions(moduleId) {
+    const container = document.getElementById('soalContainer');
+    if (!container) return;
+
+    container.innerHTML = `<p style="text-align:center;color:#aaa;">Memuat soal...</p>`;
+
+    try {
+        const response = await fetch(`/api/modules/${moduleId}/questions`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Gagal memuat soal');
+
+        const questions = result.data || [];
+        if (questions.length === 0) {
+            container.innerHTML = `<p style="text-align:center;color:#aaa;">Belum ada soal di modul ini.</p>`;
+            return;
+        }
+
+        // state
+        let currentIndex = 0;
+        const answers = new Array(questions.length).fill(null);
+
+        // render UI (one question per view) with themed controls
+        container.innerHTML = `
+            <div class="quiz-header">
+                <button id="backToModules" class="quiz-btn ghost">← Kembali ke Modul</button>
+                <h2>Soal Modul ${moduleId}</h2>
+            </div>
+            <div id="questionArea" class="question-area"></div>
+            <div class="quiz-controls">
+                <button id="exitBtn" class="quiz-btn danger">Exit Modul</button>
+                <button id="submitBtn" class="quiz-btn primary">Submit</button>
+            </div>
+            <div class="quiz-nav">
+                <div>
+                    <button id="prevBtn" class="quiz-btn ghost" disabled>⟨ Sebelumnya</button>
+                </div>
+                <div style="flex:1;text-align:center;">
+                    <span id="questionCounter"></span>
+                </div>
+                <div>
+                    <button id="nextBtn" class="quiz-btn secondary">Berikutnya ⟩</button>
+                </div>
+            </div>
+        `;
+
+        const area = document.getElementById('questionArea');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const counter = document.getElementById('questionCounter');
+        const submitBtn = document.getElementById('submitBtn');
+        const exitBtn = document.getElementById('exitBtn');
+
+        // helper to normalize answers for comparison
+        function normalize(v) {
+            if (v === null || v === undefined) return '';
+            if (Array.isArray(v)) return v.map(x => String(x).trim().toLowerCase()).join('|');
+            return String(v).trim().toLowerCase();
+        }
+
+        function renderQuestion(index) {
+            const q = questions[index];
+            // use either q.text or q.question_text depending on API
+            const text = q.text ?? q.question_text ?? q.question ?? '';
+                    area.innerHTML = `
+                        <div class="question-box">
+                            <div class="question-text"><strong>${index + 1}.</strong> ${escapeHtml(text)}</div>
+                            ${generateQuestionOptions(q)}
+                        </div>
+                    `;
+
+            // populate previously selected answer (if any)
+            const inputs = area.querySelectorAll('input[name^="q"]');
+            if (inputs && inputs.length) {
+                inputs.forEach(inp => {
+                    // radio
+                    if (inp.type === 'radio') {
+                        if (answers[index] !== null && normalize(answers[index]) === normalize(inp.value)) {
+                            inp.checked = true;
+                        }
+                        inp.addEventListener('change', () => {
+                            answers[index] = inp.value;
+                        });
+                    } else if (inp.type === 'text') {
+                        inp.value = answers[index] ?? '';
+                        inp.addEventListener('input', (e) => {
+                            answers[index] = e.target.value;
+                        });
+                    }
+                });
+            }
+
+            counter.textContent = `Soal ${index + 1} dari ${questions.length}`;
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === questions.length - 1;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                renderQuestion(currentIndex);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                renderQuestion(currentIndex);
+            }
+        });
+
+            document.getElementById('backToModules').addEventListener('click', async () => {
+                // Pause timer, save remaining seconds to progress, then return
+                const t = activeTimers.get(moduleId);
+                let remaining = null;
+                if (t) {
+                    t.pause();
+                    remaining = t.remainingSeconds;
+                }
+                const userId = getCurrentUserId();
+                if (userId) {
+                    try {
+                        await fetch(`/api/modules/${moduleId}/progress`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: userId, status: 'paused', remaining_seconds: remaining })
+                        });
+                    } catch (e) { /* ignore */ }
+                }
+                // backup answers
+                try { localStorage.setItem(`module_${moduleId}_answers`, JSON.stringify(answers)); } catch (e) {}
+                loadModules();
+            });
+
+        // Exit button: pause timer, save progress (paused) with remaining seconds, then return
+        exitBtn.addEventListener('click', async () => {
+            if (!confirm('Keluar dari modul? Progress akan disimpan dan kamu dapat melanjutkan nanti.')) return;
+            const t = activeTimers.get(moduleId);
+            let remaining = null;
+            if (t) { t.pause(); remaining = t.remainingSeconds; }
+            const userId = getCurrentUserId();
+            if (userId) {
+                try {
+                    await fetch(`/api/modules/${moduleId}/progress`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, status: 'paused', remaining_seconds: remaining })
+                    });
+                } catch (e) { /* ignore */ }
+            }
+            try { localStorage.setItem(`module_${moduleId}_answers`, JSON.stringify(answers)); } catch (e) {}
+            loadModules();
+        });
+
+        // Submit button: confirm, grade, send completed progress
+        submitBtn.addEventListener('click', async () => {
+            if (!confirm('Kirim semua jawaban dan selesaikan modul? Setelah submit, modul akan diberi status "Selesai".')) return;
+
+            // grade
+            let correctCount = 0;
+            const details = [];
+            for (let i = 0; i < questions.length; i++) {
+                const q = questions[i];
+                const userAns = answers[i];
+                const correct = q.correct_answer ?? q.answer ?? q.correct ?? null;
+                const isCorrect = correct !== null && normalize(userAns) === normalize(correct);
+                if (isCorrect) correctCount++;
+                details.push({ question: q, userAns, correct, isCorrect });
+            }
+
+            // stop timer if running
+            const t = activeTimers.get(moduleId);
+            let remaining = null;
+            if (t) {
+                remaining = t.remainingSeconds;
+                t.stop();
+                activeTimers.delete(moduleId);
+            }
+
+            // mark progress completed on server
+            const userId = getCurrentUserId();
+            if (userId) {
+                try {
+                    await fetch(`/api/modules/${moduleId}/progress`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, status: 'completed', remaining_seconds: remaining })
+                    });
+                } catch (err) {
+                    console.warn('Gagal menyimpan progress selesai:', err);
+                }
+            }
+
+                    // show summary (styled)
+                    container.innerHTML = `
+                        <div class="quiz-summary">
+                            <h3>Hasil: ${correctCount} / ${questions.length}</h3>
+                            <p class="muted">Skor: ${Math.round((correctCount / questions.length) * 100)}%</p>
+                            <div id="detailArea" class="detail-list"></div>
+                            <div style="margin-top:1rem;display:flex;gap:.5rem;justify-content:center;">
+                                <button id="backToModulesAfterSubmit" class="quiz-btn secondary">Kembali ke Modul</button>
+                            </div>
+                        </div>
+                    `;
+
+                    const detailArea = document.getElementById('detailArea');
+                    detailArea.innerHTML = details.map((d, i) => {
+                        const qtext = escapeHtml(d.question.text ?? d.question.question_text ?? '');
+                        const user = escapeHtml(d.userAns ?? '-');
+                        const corr = escapeHtml(d.correct ?? '-');
+                        const mark = d.isCorrect ? '✅' : '❌';
+                        return `<div class="detail-item">
+                                            <div><strong>Soal ${i+1}.</strong> ${qtext}</div>
+                                            <div style="margin-top:.25rem;color:var(--muted,#ddd);">Jawaban kamu: ${user} — Kunci: ${corr} ${mark}</div>
+                                        </div>`;
+                    }).join('');
+
+                    document.getElementById('backToModulesAfterSubmit').addEventListener('click', () => {
+                        loadModules();
+                    });
+        });
+
+        // Pause otomatis saat tab diganti / halaman berpindah (saves via Timer.pause if running)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                const t = activeTimers.get(moduleId);
+                if (t) t.pause();
+            }
+        });
+
+        // try to restore saved answers from localStorage (optional)
+        try {
+            const saved = JSON.parse(localStorage.getItem(`module_${moduleId}_answers`) || 'null');
+            if (Array.isArray(saved) && saved.length === questions.length) {
+                for (let i=0;i<saved.length;i++) answers[i] = saved[i];
+            }
+        } catch (e) {}
+
+        renderQuestion(currentIndex);
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = `<p style="text-align:center;color:red;">Terjadi kesalahan saat memuat soal.</p>`;
+    }
+}
+
+/**
+ * Generate HTML for question options based on type (robust)
+ */
+function generateQuestionOptions(question) {
+    // default safe values
+    const qid = question.id ?? Math.random().toString(36).slice(2, 9);
+    const type = (question.type || 'multiple_choice').toLowerCase();
+
+    if (type === 'multiple_choice' && Array.isArray(question.options) && question.options.length > 0) {
+        return `
+            <div class="options">
+                ${question.options.map((opt, idx) => `
+                    <label>
+                        <input type="radio" name="q${qid}" value="${escapeHtml(String(opt))}"> ${escapeHtml(String(opt))}
+                    </label>
+                `).join('')}
+            </div>
+        `;
+    } else if (type === 'true_false') {
+        return `
+            <div class="options">
+                <label><input type="radio" name="q${qid}" value="true"> True</label>
+                <label><input type="radio" name="q${qid}" value="false"> False</label>
+            </div>
+        `;
+    } else {
+        // short answer fallback
+        return `
+            <div class="answer-box">
+                <input class="text-input" type="text" name="q${qid}" placeholder="Jawaban kamu...">
+            </div>
+        `;
+    }
 }
 
 /**
@@ -433,4 +720,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     const modules = await fetchModules();
     await generateModuleBoxes(modules);
 });
+
+/**
+ * Helper to reload modules list (used in multiple places)
+ */
+async function loadModules() {
+    showLoading();
+    const modules = await fetchModules();
+    await generateModuleBoxes(modules);
+}
 

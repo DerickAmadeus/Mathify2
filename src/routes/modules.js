@@ -386,4 +386,77 @@ router.delete('/:id/progress', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/modules/{id}/questions:
+ *   get:
+ *     summary: Get all questions for a specific module
+ *     description: Retrieve all questions linked to a given module ID
+ *     tags:
+ *       - Modules
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Module ID
+ *     responses:
+ *       200:
+ *         description: List of questions for the module
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   module_id:
+ *                     type: integer
+ *                   question_text:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *                   options:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   correct_answer:
+ *                     type: string
+ *       404:
+ *         description: No questions found for this module
+ */
+router.get('/:id/questions', async (req, res) => {
+  try {
+    const moduleId = req.params.id;
+
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('module_id', moduleId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No questions found for this module'
+      });
+    }
+
+    res.json({
+      success: true,
+      data
+    });
+  } catch (err) {
+    console.error('Error fetching questions:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;
