@@ -4,8 +4,12 @@ const { supabase } = require('../config/supabase');
 
 // GET /api/questions?module_id=1
 router.get('/', async (req, res) => {
-    const moduleId = req.query.module_id;
-    if (!moduleId) return res.status(400).json({ error: 'module_id required' });
+    // Ubah string dari query menjadi angka (integer)
+    const moduleId = parseInt(req.query.module_id, 10);
+    
+    if (!moduleId || isNaN(moduleId)) {
+        return res.status(400).json({ error: 'module_id required and must be a number' });
+    }
 
     try {
         const { data, error } = await supabase
