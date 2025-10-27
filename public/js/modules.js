@@ -175,10 +175,10 @@ async function generateModuleBoxes(modules) {
             
             // Show score if available
             if (progress.right_answer !== null || progress.wrong_answer !== null) {
-                const rightCount = progress.right_answer || 0;
-                const wrongCount = progress.wrong_answer || 0;
-                const totalQuestions = module.total_questions || (rightCount + wrongCount);
-                const percentage = totalQuestions > 0 ? Math.round((rightCount / totalQuestions) * 100) : 0;
+                const rightCount = progress.right_answer;
+                const wrongCount = progress.wrong_answer;
+                let totalQuestions = rightCount + wrongCount;
+                const percentage = ((rightCount / totalQuestions) * 100);
                 scoreDisplay = `
                     <div class="soal-score" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -207,12 +207,7 @@ async function generateModuleBoxes(modules) {
             <div class="soal-body">
                 ${module.description ? `<p class="soal-description" style="margin-bottom: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">${escapeHtml(module.description)}</p>` : ''}
                 <div class="soal-info">
-                    <div class="soal-progress">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="soal-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>${module.total_questions} Soal</span>
-                    </div>
+                    <!-- jumlah soal dihapus sesuai permintaan -->
                     <div class="soal-timer">
                         <svg xmlns="http://www.w3.org/2000/svg" class="soal-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -233,6 +228,13 @@ async function generateModuleBoxes(modules) {
         `;
         
         container.appendChild(box);
+        // Update jumlah soal di card modul jika window.questions tersedia
+        if (window.questions && Array.isArray(window.questions)) {
+            const countSpan = box.querySelector(`#question-count-${module.id}`);
+            if (countSpan) {
+                countSpan.textContent = `${window.questions.length} Soal`;
+            }
+        }
     }
 }
 
