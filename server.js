@@ -15,6 +15,7 @@ const { swaggerUi, specs } = require('./src/config/swagger');
 const usersRouter = require('./src/routes/users');
 const modulesRouter = require('./src/routes/modules');
 const calculatorRoutes = require('./src/routes/calculator');
+const questionsRouter = require('./src/routes/questions');
 
 // Initialize Express app
 const app = express();
@@ -42,7 +43,7 @@ app.get('/', (req, res) => {
 app.use('/api/users', usersRouter);
 app.use('/api/modules', modulesRouter);
 app.use('/api/calculator', calculatorRoutes);
-
+app.use('/api/questions', questionsRouter);
 
 // 404 Handler
 app.use((req, res) => {
