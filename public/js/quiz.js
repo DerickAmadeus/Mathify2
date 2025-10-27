@@ -454,7 +454,12 @@ function loadQuestion(questionNumber) {
         // Update question formula with MathJax
         const questionFormula = document.getElementById('questionFormula');
         if (questionFormula) {
-            questionFormula.textContent = `$$${question.formula}$$`;
+            let formulaText = question.formula || '';
+            // Only wrap with $$ if not already present
+            if (!formulaText.trim().startsWith('$$')) {
+                formulaText = `$$${formulaText}$$`;
+            }
+            questionFormula.innerHTML = formulaText;
             // Re-render MathJax for the formula
             if (window.MathJax) {
                 MathJax.typesetPromise([questionFormula]).catch((err) => console.log('MathJax error:', err));
@@ -667,12 +672,31 @@ async function saveQuizResults(rightAnswer, wrongAnswer) {
     }
 }
 
+async function waitForMathJax() {
+    return new Promise((resolve) => {
+        if (window.MathJax && MathJax.typesetPromise) {
+            resolve();
+        } else {
+            const checkInterval = setInterval(() => {
+                if (window.MathJax && MathJax.typesetPromise) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 200);
+        }
+    });
+}
+
 // Initialize MathJax
-function initializeMathJax() {
-    if (window.MathJax) {
-        MathJax.typesetPromise().catch((err) => console.log('MathJax error:', err));
+async function initializeMathJax() {
+    await waitForMathJax(); // pastikan MathJax sudah siap
+    try {
+        await MathJax.typesetPromise();
+    } catch (err) {
+        console.log('MathJax render error:', err);
     }
 }
+
 
 
 // Initialize Quiz
