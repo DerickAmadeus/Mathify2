@@ -242,30 +242,9 @@ async function generateModuleBoxes(modules) {
         // Get progress from map
         const progress = progressMap.get(module.id) || null;
 
-        const isInProgress = progress && progress.status === 'in_progress';
-        const isPaused = progress && progress.status === 'paused';
-        const isCompleted = progress && progress.status === 'completed';
-        
         let timerDisplay = `${module.duration_minutes} menit`;
-        let buttonText = 'Mulai Soal';
+        let buttonText = 'Mulai Quiz';
         let buttonIcon = 'M13 7l5 5m0 0l-5 5m5-5H6';
-        
-        if (isCompleted) {
-            timerDisplay = 'Selesai!';
-            buttonText = 'Ulangi';
-        } else if (progress && progress.remaining_seconds !== null) {
-            const mins = Math.floor(progress.remaining_seconds / 60);
-            const secs = progress.remaining_seconds % 60;
-            timerDisplay = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            
-            if (isPaused) {
-                buttonText = 'Lanjutkan';
-                buttonIcon = 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z';
-            } else if (isInProgress) {
-                buttonText = 'Pause';
-                buttonIcon = 'M10 9v6m4-6v6';
-            }
-        }
         
         box.innerHTML = `
             <div class="soal-header">
@@ -301,128 +280,42 @@ async function generateModuleBoxes(modules) {
         `;
         
         container.appendChild(box);
-        
-        // Auto-resume if was in progress
-        if (isInProgress && progress) {
-            // Add flag to prevent race condition with user clicks
-            const button = document.getElementById(buttonId);
-            if (button) button.disabled = true;
-            
-            setTimeout(() => {
-                if (button) button.disabled = false;
-                // Check again if timer already exists (user might have clicked during delay)
-                if (!activeTimers.has(module.id)) {
-                    startModule(module.id, module.duration_minutes, timerId, buttonId, progress.remaining_seconds);
-                }
-            }, 500);
-        }
     }
 }
 
 /**
- * Handle module button click (start/pause/resume/restart)
+ * Handle module button click (start quiz directly - redirect to quiz page)
  */
 async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
-    const timer = activeTimers.get(moduleId);
-    const button = document.getElementById(buttonId);
-    
-    // Check if button is "Ulangi" (completed status)
-    if (button && button.textContent.trim() === 'Ulangi') {
-        try {
-            // Delete progress from database
-            const userData = localStorage.getItem('user');
-            if (!userData) return;
-            
-            const user = JSON.parse(userData);
-            const response = await fetch(`/api/modules/${moduleId}/progress?user_id=${user.id}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                // Reload modules to reset the UI
-                loadModules();
-            } else {
-                console.error('Failed to delete progress');
-            }
-        } catch (error) {
-            console.error('Error restarting module:', error);
-        }
-        return;
-    }
-    
-    if (timer) {
-        // Timer exists - toggle pause/resume
-        if (timer.isPaused) {
-            timer.resume();
-            updateButton(button, 'Pause', 'M10 9v6m4-6v6');
-        } else {
-            timer.pause();
-            updateButton(button, 'Lanjutkan', 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z');
-        }
-    } else {
-        // Start new timer
-        startModule(moduleId, durationMinutes, timerId, buttonId, remainingSeconds);
-    }
-}
-
-/**
- * Update button text and icon
- */
-function updateButton(button, text, iconPath) {
-    if (!button) return;
-    button.innerHTML = `
-        <span>${text}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
-        </svg>
-    `;
-}
-
-/**
- * Start module timer
- */
-function startModule(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
-    const timerElement = document.getElementById(timerId);
-    const button = document.getElementById(buttonId);
-    
-    if (!timerElement || !button) return;
-    
-    // Check if timer already exists
-    if (activeTimers.has(moduleId)) {
-        return;
-    }
-    
     const userId = getCurrentUserId();
     if (!userId) {
         alert('Silakan login terlebih dahulu');
         return;
     }
+
+    // Confirm before starting quiz
+    const confirmed = confirm(
+        'Memulai quiz?\n\n' +
+        'Perhatian:\n' +
+        '- Quiz tidak dapat dipause\n' +
+        '- Anda tidak dapat meninggalkan halaman selama quiz berlangsung\n' +
+        '- Timer akan berjalan terus'
+    );
     
-    // Create new timer
-    const timer = new Timer(durationMinutes, remainingSeconds);
-    timer.moduleId = moduleId;
-    timer.userId = userId;
-    
-    activeTimers.set(moduleId, timer);
-    
-    timer.start((timeString, isPaused) => {
-        timerElement.textContent = `Waktu tersisa: ${timeString}`;
+    if (confirmed) {
+        // Store module info in sessionStorage
+        sessionStorage.setItem('currentModule', JSON.stringify({
+            id: moduleId,
+            durationMinutes: durationMinutes,
+            remainingSeconds: remainingSeconds
+        }));
         
-        // When timer ends
-        if (timeString === '00:00') {
-            timerElement.textContent = 'Waktu Habis!';
-            updateButton(button, 'Selesai', 'M5 13l4 4L19 7');
-            button.disabled = true;
-            button.style.opacity = '0.7';
-            activeTimers.delete(moduleId);
-        }
-    });
-    
-    // Update button to Pause
-    updateButton(button, 'Pause', 'M10 9v6m4-6v6');
-    
-    console.log(`Started module ${moduleId}`);
+        // Redirect to quiz page
+        window.location.href = '/quiz';
+    }
 }
+
+
 
 /**
  * Initialize on page load
