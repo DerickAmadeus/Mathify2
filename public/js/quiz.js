@@ -18,79 +18,20 @@ let quizState = {
     moduleData: null
 };
 
-// Sample Questions Data
-const questions = [
-    {
-        id: 1,
-        title: "Hasil limit",
-        formula: "\\lim_{(x,y)\\to(0,0)} \\frac{3x^2 + x^2y + 3y^2 + y^3}{x^2 + y^2} = A",
-        instruction: "Maka $A =$",
-        correctAnswer: "6" // Contoh jawaban benar
-    },
-    {
-        id: 2,
-        title: "Turunan fungsi",
-        formula: "f(x) = x^3 + 2x^2 - 5x + 1",
-        instruction: "Tentukan $f'(2)$",
-        correctAnswer: "19"
-    },
-    {
-        id: 3,
-        title: "Integral",
-        formula: "\\int (3x^2 + 2x) dx",
-        instruction: "Hasil integral adalah",
-        correctAnswer: "x^3 + x^2 + C"
-    },
-    {
-        id: 4,
-        title: "Persamaan kuadrat",
-        formula: "x^2 - 5x + 6 = 0",
-        instruction: "Akar-akar persamaan adalah",
-        correctAnswer: "2, 3"
-    },
-    {
-        id: 5,
-        title: "Trigonometri",
-        formula: "\\sin^2(x) + \\cos^2(x)",
-        instruction: "Nilai dari ekspresi ini adalah",
-        correctAnswer: "1"
-    },
-    {
-        id: 6,
-        title: "Logaritma",
-        formula: "\\log_2(8)",
-        instruction: "Nilai logaritma adalah",
-        correctAnswer: "3"
-    },
-    {
-        id: 7,
-        title: "Eksponen",
-        formula: "2^5",
-        instruction: "Hasil adalah",
-        correctAnswer: "32"
-    },
-    {
-        id: 8,
-        title: "Kombinasi",
-        formula: "C(5,2)",
-        instruction: "Jumlah kombinasi adalah",
-        correctAnswer: "10"
-    },
-    {
-        id: 9,
-        title: "Matriks",
-        formula: "\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}",
-        instruction: "Determinan matriks adalah",
-        correctAnswer: "-2"
-    },
-    {
-        id: 10,
-        title: "Vektor",
-        formula: "\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos(\\theta)",
-        instruction: "Jika θ = 90°, maka hasilnya",
-        correctAnswer: "0"
+
+// Questions will be fetched from API
+let questions = [];
+
+async function fetchQuestionsByModule(moduleId) {
+    try {
+        const response = await fetch(`/api/questions?module_id=${moduleId}`);
+        if (!response.ok) throw new Error('Failed to fetch questions');
+        questions = await response.json();
+    } catch (error) {
+        console.error('Error fetching questions:', error);
+        alert('Gagal mengambil soal dari server.');
     }
-];
+}
 
 // Load module data from sessionStorage and DB
 async function loadModuleData() {
@@ -657,10 +598,10 @@ function finishQuiz() {
         const userAnswer = quizState.answers[i];
         const question = questions[i - 1]; // questions array is 0-indexed
         
-        if (userAnswer && question && question.correctAnswer) {
+        if (userAnswer && question && question.correct_answer) {
             // Simple string comparison (trim and lowercase)
             const normalizedUserAnswer = userAnswer.trim().toLowerCase();
-            const normalizedCorrectAnswer = question.correctAnswer.trim().toLowerCase();
+            const normalizedCorrectAnswer = question.correct_answer.trim().toLowerCase();
             
             if (normalizedUserAnswer === normalizedCorrectAnswer) {
                 rightAnswer++;
@@ -733,22 +674,53 @@ function initializeMathJax() {
     }
 }
 
+
 // Initialize Quiz
 async function initializeQuiz() {
     // Load module data first
-    await loadModuleData();
-    
+    const moduleData = await loadModuleData();
+    if (!moduleData) return;
+
+    // Fetch questions for this module
+    await fetchQuestionsByModule(moduleData.id);
+
     preventPageLeave();
     startTimer();
     initializeGraph();
     generateQuestionGrid();
     setupEventListeners();
-    
+
+    // Jika tidak ada soal, tampilkan pesan
+    if (!questions || questions.length === 0) {
+        showNoQuestionsMessage();
+        return;
+    }
+
     // Load first question
     loadQuestion(1);
-    
+
     // Initialize MathJax after a short delay
     setTimeout(initializeMathJax, 100);
+}
+
+function showNoQuestionsMessage() {
+    // Hapus konten quiz
+    const quizContainer = document.getElementById('quizContainer') || document.body;
+    quizContainer.innerHTML = '';
+    // Buat elemen pesan
+    const msg = document.createElement('div');
+    msg.textContent = 'Soal belum tersedia.';
+    msg.style.background = '#fff';
+    msg.style.color = '#333';
+    msg.style.fontSize = '2rem';
+    msg.style.fontWeight = 'bold';
+    msg.style.textAlign = 'center';
+    msg.style.padding = '60px';
+    msg.style.borderRadius = '12px';
+    msg.style.margin = '80px auto';
+    msg.style.maxWidth = '400px';
+    msg.style.boxShadow = '0 2px 16px rgba(0,0,0,0.08)';
+    quizContainer.appendChild(msg);
 }
 
 // Start quiz when page loads
