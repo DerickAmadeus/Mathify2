@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="../img/logo.png">
     <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/calculator.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mathify - Calculator</title>
 </head>
@@ -80,6 +81,11 @@
                 <div class="calculator">
                     <div class="calculator-display">
                         <div id="display" class="display">0</div>
+                        <button id="history-toggle" class="history-toggle-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
                     </div>
                     <div class="calculator-buttons">
                         <div class="button-row">
@@ -134,6 +140,26 @@
                     </div>
                 </div>
                     
+                <!-- History Modal -->
+                <div id="history-modal" class="history-modal">
+                    <div class="history-modal-content">
+                        <div class="history-modal-header">
+                            <h3 class="history-title">Calculation History</h3>
+                            <div class="history-modal-actions">
+                                <button id="clear-history" class="clear-history-btn">
+                                    Clear History
+                                </button>
+                                <button id="close-history" class="close-history-btn">
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                        <div id="history-list" class="history-list">
+                            <!-- History items will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Calculator Features -->
                 <div class="calculator-features">
                     <h3 class="features-title">Calculator Features</h3>
