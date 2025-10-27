@@ -110,12 +110,12 @@
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-.soal-btn:hover {
+.soal-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.soal-btn:active {
+.soal-btn:active:not(:disabled) {
     transform: translateY(0);
 }
 
@@ -124,8 +124,14 @@
     cursor: not-allowed;
 }
 
+.soal-btn.completed {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
 .soal-btn:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
 }
 

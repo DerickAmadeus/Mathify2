@@ -2,92 +2,6 @@
  * Modules Page - Fetch and display practice modules from database
  */
 
-// Timer class for countdown with pause/resume
-class Timer {
-    constructor(minutes, remainingSeconds = null) {
-        this.totalSeconds = minutes * 60;
-        this.remainingSeconds = remainingSeconds !== null ? remainingSeconds : this.totalSeconds;
-        this.intervalId = null;
-        this.isPaused = false;
-        this.moduleId = null;
-        this.userId = null;
-        this.lastSaveTime = Date.now();
-        this.saveInterval = 10000; // Save every 10 seconds
-    }
-
-    start(callback) {
-        if (this.intervalId) return; // Already running
-        
-        this.isPaused = false;
-        this.lastSaveTime = Date.now(); // Reset save timer
-        
-        this.intervalId = setInterval(() => {
-            if (!this.isPaused) {
-                // Prevent negative values
-                this.remainingSeconds = Math.max(0, this.remainingSeconds - 1);
-                
-                if (this.remainingSeconds <= 0) {
-                    this.stop();
-                    this.saveProgress('completed');
-                } else {
-                    // Auto-save based on time elapsed, not modulo
-                    const now = Date.now();
-                    if (now - this.lastSaveTime >= this.saveInterval) {
-                        this.saveProgress('in_progress');
-                        this.lastSaveTime = now;
-                    }
-                }
-                
-                if (callback) callback(this.getFormattedTime(), this.isPaused);
-            }
-        }, 1000);
-    }
-
-    pause() {
-        this.isPaused = true;
-        this.saveProgress('paused');
-    }
-
-    resume() {
-        this.isPaused = false;
-        this.saveProgress('in_progress');
-    }
-
-    stop() {
-        if (this.intervalId) {
-            clearInterval(this.intervalId);
-            this.intervalId = null;
-        }
-    }
-
-    async saveProgress(status) {
-        if (!this.moduleId || !this.userId) return;
-
-        try {
-            await fetch(`/api/modules/${this.moduleId}/progress`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: this.userId,
-                    status: status,
-                    remaining_seconds: this.remainingSeconds
-                })
-            });
-        } catch (err) {
-            console.error('Error saving progress:', err);
-        }
-    }
-
-    getFormattedTime() {
-        const minutes = Math.floor(this.remainingSeconds / 60);
-        const seconds = this.remainingSeconds % 60;
-        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
-}
-
-// Store active timers
-const activeTimers = new Map();
-
 /**
  * Fetch modules from API
  */
@@ -241,35 +155,51 @@ async function generateModuleBoxes(modules) {
         
         // Get progress from map
         const progress = progressMap.get(module.id) || null;
-
-        const isInProgress = progress && progress.status === 'in_progress';
-        const isPaused = progress && progress.status === 'paused';
-        const isCompleted = progress && progress.status === 'completed';
         
         let timerDisplay = `${module.duration_minutes} menit`;
-        let buttonText = 'Mulai Soal';
+        let buttonText = 'Mulai Quiz';
         let buttonIcon = 'M13 7l5 5m0 0l-5 5m5-5H6';
+        let isCompleted = progress && progress.status === 'completed';
+        let completedBadge = '';
+        let scoreDisplay = '';
         
+        // If completed, show results and disable button
         if (isCompleted) {
-            timerDisplay = 'Selesai!';
-            buttonText = 'Ulangi';
-        } else if (progress && progress.remaining_seconds !== null) {
-            const mins = Math.floor(progress.remaining_seconds / 60);
-            const secs = progress.remaining_seconds % 60;
-            timerDisplay = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            buttonText = 'Selesai';
+            buttonIcon = 'M5 13l4 4L19 7';
+            completedBadge = `
+                <span class="soal-badge" style="background: #10b981; margin-left: 0.5rem;">
+                    ✓ Completed
+                </span>
+            `;
             
-            if (isPaused) {
-                buttonText = 'Lanjutkan';
-                buttonIcon = 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z';
-            } else if (isInProgress) {
-                buttonText = 'Pause';
-                buttonIcon = 'M10 9v6m4-6v6';
+            // Show score if available
+            if (progress.right_answer !== null || progress.wrong_answer !== null) {
+                const rightCount = progress.right_answer;
+                const wrongCount = progress.wrong_answer;
+                let totalQuestions = rightCount + wrongCount;
+                const percentage = ((rightCount / totalQuestions) * 100);
+                scoreDisplay = `
+                    <div class="soal-score" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Hasil Quiz</span>
+                            <span style="color: #10b981; font-weight: bold; font-size: 1rem;">${percentage}%</span>
+                        </div>
+                        <div style="display: flex; gap: 1rem; font-size: 0.85rem;">
+                            <span style="color: #10b981;">✓ Benar: ${rightCount}</span>
+                            <span style="color: #ef4444;">✗ Salah: ${wrongCount}</span>
+                        </div>
+                    </div>
+                `;
             }
         }
         
         box.innerHTML = `
             <div class="soal-header">
-                <h3 class="soal-judul">${escapeHtml(module.title)}</h3>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 class="soal-judul">${escapeHtml(module.title)}</h3>
+                    ${completedBadge}
+                </div>
                 <span class="soal-badge" style="background: ${difficultyColor}">
                     ${escapeHtml(module.difficulty || 'Medium')}
                 </span>
@@ -277,12 +207,7 @@ async function generateModuleBoxes(modules) {
             <div class="soal-body">
                 ${module.description ? `<p class="soal-description" style="margin-bottom: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">${escapeHtml(module.description)}</p>` : ''}
                 <div class="soal-info">
-                    <div class="soal-progress">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="soal-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>${module.total_questions} Soal</span>
-                    </div>
+                    <!-- jumlah soal dihapus sesuai permintaan -->
                     <div class="soal-timer">
                         <svg xmlns="http://www.w3.org/2000/svg" class="soal-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -290,8 +215,10 @@ async function generateModuleBoxes(modules) {
                         <span id="${timerId}">${timerDisplay}</span>
                     </div>
                 </div>
-                <button class="soal-btn" id="${buttonId}" 
-                    onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null})">
+                ${scoreDisplay}
+                <button class="soal-btn ${isCompleted ? 'completed' : ''}" id="${buttonId}" 
+                    onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null}, ${isCompleted})"
+                    ${isCompleted ? 'disabled' : ''}>
                     <span>${buttonText}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${buttonIcon}" />
@@ -301,127 +228,52 @@ async function generateModuleBoxes(modules) {
         `;
         
         container.appendChild(box);
-        
-        // Auto-resume if was in progress
-        if (isInProgress && progress) {
-            // Add flag to prevent race condition with user clicks
-            const button = document.getElementById(buttonId);
-            if (button) button.disabled = true;
-            
-            setTimeout(() => {
-                if (button) button.disabled = false;
-                // Check again if timer already exists (user might have clicked during delay)
-                if (!activeTimers.has(module.id)) {
-                    startModule(module.id, module.duration_minutes, timerId, buttonId, progress.remaining_seconds);
-                }
-            }, 500);
-        }
-    }
-}
-
-/**
- * Handle module button click (start/pause/resume/restart)
- */
-async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
-    const timer = activeTimers.get(moduleId);
-    const button = document.getElementById(buttonId);
-    
-    // Check if button is "Ulangi" (completed status)
-    if (button && button.textContent.trim() === 'Ulangi') {
-        try {
-            // Delete progress from database
-            const userData = localStorage.getItem('user');
-            if (!userData) return;
-            
-            const user = JSON.parse(userData);
-            const response = await fetch(`/api/modules/${moduleId}/progress?user_id=${user.id}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                // Reload modules to reset the UI
-                loadModules();
-            } else {
-                console.error('Failed to delete progress');
+        // Update jumlah soal di card modul jika window.questions tersedia
+        if (window.questions && Array.isArray(window.questions)) {
+            const countSpan = box.querySelector(`#question-count-${module.id}`);
+            if (countSpan) {
+                countSpan.textContent = `${window.questions.length} Soal`;
             }
-        } catch (error) {
-            console.error('Error restarting module:', error);
         }
-        return;
-    }
-    
-    if (timer) {
-        // Timer exists - toggle pause/resume
-        if (timer.isPaused) {
-            timer.resume();
-            updateButton(button, 'Pause', 'M10 9v6m4-6v6');
-        } else {
-            timer.pause();
-            updateButton(button, 'Lanjutkan', 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z');
-        }
-    } else {
-        // Start new timer
-        startModule(moduleId, durationMinutes, timerId, buttonId, remainingSeconds);
     }
 }
 
 /**
- * Update button text and icon
+ * Handle module button click (start quiz - redirect to quiz page)
  */
-function updateButton(button, text, iconPath) {
-    if (!button) return;
-    button.innerHTML = `
-        <span>${text}</span>
-        <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}" />
-        </svg>
-    `;
-}
-
-/**
- * Start module timer
- */
-function startModule(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
-    const timerElement = document.getElementById(timerId);
-    const button = document.getElementById(buttonId);
-    
-    if (!timerElement || !button) return;
-    
-    // Check if timer already exists
-    if (activeTimers.has(moduleId)) {
-        return;
-    }
-    
+async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null, isCompleted = false) {
     const userId = getCurrentUserId();
     if (!userId) {
         alert('Silakan login terlebih dahulu');
         return;
     }
+
+    // Block access if already completed
+    if (isCompleted) {
+        alert('Anda sudah menyelesaikan quiz ini! Lihat hasil Anda di card module.');
+        return;
+    }
+
+    // Confirm before starting quiz
+    const confirmed = confirm(
+        'Memulai quiz?\n\n' +
+        'Perhatian:\n' +
+        '- Quiz tidak dapat di-pause\n' +
+        '- Anda tidak dapat meninggalkan halaman selama quiz berlangsung\n' +
+        '- Timer akan berjalan terus tanpa henti'
+    );
     
-    // Create new timer
-    const timer = new Timer(durationMinutes, remainingSeconds);
-    timer.moduleId = moduleId;
-    timer.userId = userId;
-    
-    activeTimers.set(moduleId, timer);
-    
-    timer.start((timeString, isPaused) => {
-        timerElement.textContent = `Waktu tersisa: ${timeString}`;
+    if (confirmed) {
+        // Store module info in sessionStorage
+        sessionStorage.setItem('currentModule', JSON.stringify({
+            id: moduleId,
+            durationMinutes: durationMinutes,
+            remainingSeconds: remainingSeconds
+        }));
         
-        // When timer ends
-        if (timeString === '00:00') {
-            timerElement.textContent = 'Waktu Habis!';
-            updateButton(button, 'Selesai', 'M5 13l4 4L19 7');
-            button.disabled = true;
-            button.style.opacity = '0.7';
-            activeTimers.delete(moduleId);
-        }
-    });
-    
-    // Update button to Pause
-    updateButton(button, 'Pause', 'M10 9v6m4-6v6');
-    
-    console.log(`Started module ${moduleId}`);
+        // Redirect to quiz page
+        window.location.href = '/quiz';
+    }
 }
 
 /**
