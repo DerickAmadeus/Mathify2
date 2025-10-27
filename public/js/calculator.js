@@ -192,6 +192,7 @@ function calculate() {
         const display = document.getElementById('display');
         display.textContent = result;
         displayExpression = result.toString();
+        saveToHistory(expression, result);
         justCalculated = true;
     } catch (err) {
         const display = document.getElementById('display');
@@ -215,3 +216,49 @@ function isOperator(char) {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('display').textContent = '0';
 });
+
+async function saveToHistory(expression, result) {
+  try {
+    // Ambil user langsung dari localStorage
+    const userData = localStorage.getItem('user');
+    let userId = null;
+
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        userId = parsedUser.id; // pastikan sesuai dengan field id di tabel users kamu
+      } catch (e) {
+        console.error('❌ Gagal parse user dari localStorage:', e);
+      }
+    }
+
+    // Kalau belum login, jangan kirim ke database
+    if (!userId) {
+      console.warn('⚠️ User belum login, history tidak disimpan');
+      return;
+    }
+
+    console.log('📤 Kirim data ke backend:', { user_id: userId, expression, result });
+
+    const response = await fetch('/api/calculator/history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: userId,
+        expression,
+        result
+      })
+    });
+
+    const data = await response.json();
+    console.log('📥 Respon server:', response.status, data);
+
+    if (!response.ok) {
+      console.error('❌ Gagal menyimpan history:', data.error);
+    } else {
+      console.log('✅ History berhasil disimpan');
+    }
+  } catch (err) {
+    console.error('Unexpected error:', err);
+  }
+}

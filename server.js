@@ -10,9 +10,11 @@ const { connectDB } = require('./src/config/supabase');
 const cleanUrlMiddleware = require('./src/middleware/cleanUrl');
 const { swaggerUi, specs } = require('./src/config/swagger');
 
+
 // Import routes
 const usersRouter = require('./src/routes/users');
 const modulesRouter = require('./src/routes/modules');
+const calculatorRoutes = require('./src/routes/calculator');
 
 // Initialize Express app
 const app = express();
@@ -39,6 +41,8 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/users', usersRouter);
 app.use('/api/modules', modulesRouter);
+app.use('/api/calculator', calculatorRoutes);
+
 
 // 404 Handler
 app.use((req, res) => {
