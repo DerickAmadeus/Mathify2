@@ -1,6 +1,8 @@
 // Quiz Configuration
 const QUIZ_CONFIG = {
-    totalQuestions: 10,
+    get totalQuestions() {
+        return questions.length;
+    },
     debounceDelay: 800 // 800ms debounce for graph update
 };
 
