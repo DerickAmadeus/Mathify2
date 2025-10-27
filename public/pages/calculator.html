@@ -112,6 +112,26 @@
                             <button class="calc-button calc-button-half equals" onclick="calculate()">=</button>
                         </div>
                     </div>
+                    <!-- Scientific Functions -->
+                    <div class="calculator-functions">
+                        <div class="function-row">
+                            <button class="calc-button function" onclick="appendToDisplay('(')">(</button>
+                            <button class="calc-button function" onclick="appendToDisplay(')')">)</button>
+                            <button class="calc-button function" onclick="appendToDisplay('sin')">sin</button>
+                            <button class="calc-button function" onclick="appendToDisplay('cos')">cos</button>
+                        </div>
+                        <div class="function-row">
+                            <button class="calc-button function" onclick="appendToDisplay('tan')">tan</button>
+                            <button class="calc-button function" onclick="appendToDisplay('log')">log₁₀</button>
+                            <button class="calc-button function" onclick="appendToDisplay('ln')">ln</button>
+                            <button class="calc-button function" onclick="appendToDisplay('sqrt')">√</button>
+                        </div>
+                        <div class="function-row">
+                            <button class="calc-button function" onclick="appendToDisplay('exp')">eˣ</button>
+                            <button class="calc-button function" onclick="appendToDisplay('^')">xʸ</button>
+                            <button class="calc-button function" onclick="appendToDisplay('°')">°</button>
+                        </div>
+                    </div>
                 </div>
                     
                 <!-- Calculator Features -->
@@ -124,15 +144,19 @@
                         </li>
                         <li>
                             <span class="checkmark">✓</span>
-                            Decimal calculations
+                            Scientific functions (sin, cos, tan)
                         </li>
                         <li>
                             <span class="checkmark">✓</span>
-                            Memory functions
+                            Logarithms (log₁₀, ln) & Powers
                         </li>
                         <li>
                             <span class="checkmark">✓</span>
-                            Professional design
+                            Exponential & Square root
+                        </li>
+                        <li>
+                            <span class="checkmark">✓</span>
+                            Automatic degree conversion
                         </li>
                     </ul>
                     
