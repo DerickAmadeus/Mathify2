@@ -159,10 +159,47 @@ async function generateModuleBoxes(modules) {
         let timerDisplay = `${module.duration_minutes} menit`;
         let buttonText = 'Mulai Quiz';
         let buttonIcon = 'M13 7l5 5m0 0l-5 5m5-5H6';
+        let isCompleted = progress && progress.status === 'completed';
+        let completedBadge = '';
+        let scoreDisplay = '';
+        
+        // If completed, show results and disable button
+        if (isCompleted) {
+            buttonText = 'Selesai';
+            buttonIcon = 'M5 13l4 4L19 7';
+            completedBadge = `
+                <span class="soal-badge" style="background: #10b981; margin-left: 0.5rem;">
+                    ✓ Completed
+                </span>
+            `;
+            
+            // Show score if available
+            if (progress.right_answer !== null || progress.wrong_answer !== null) {
+                const rightCount = progress.right_answer || 0;
+                const wrongCount = progress.wrong_answer || 0;
+                const totalQuestions = module.total_questions || (rightCount + wrongCount);
+                const percentage = totalQuestions > 0 ? Math.round((rightCount / totalQuestions) * 100) : 0;
+                scoreDisplay = `
+                    <div class="soal-score" style="margin-top: 0.75rem; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span style="color: rgba(255,255,255,0.7); font-size: 0.85rem;">Hasil Quiz</span>
+                            <span style="color: #10b981; font-weight: bold; font-size: 1rem;">${percentage}%</span>
+                        </div>
+                        <div style="display: flex; gap: 1rem; font-size: 0.85rem;">
+                            <span style="color: #10b981;">✓ Benar: ${rightCount}</span>
+                            <span style="color: #ef4444;">✗ Salah: ${wrongCount}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
         
         box.innerHTML = `
             <div class="soal-header">
-                <h3 class="soal-judul">${escapeHtml(module.title)}</h3>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 class="soal-judul">${escapeHtml(module.title)}</h3>
+                    ${completedBadge}
+                </div>
                 <span class="soal-badge" style="background: ${difficultyColor}">
                     ${escapeHtml(module.difficulty || 'Medium')}
                 </span>
@@ -183,8 +220,10 @@ async function generateModuleBoxes(modules) {
                         <span id="${timerId}">${timerDisplay}</span>
                     </div>
                 </div>
-                <button class="soal-btn" id="${buttonId}" 
-                    onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null})">
+                ${scoreDisplay}
+                <button class="soal-btn ${isCompleted ? 'completed' : ''}" id="${buttonId}" 
+                    onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null}, ${isCompleted})"
+                    ${isCompleted ? 'disabled' : ''}>
                     <span>${buttonText}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${buttonIcon}" />
@@ -200,10 +239,16 @@ async function generateModuleBoxes(modules) {
 /**
  * Handle module button click (start quiz - redirect to quiz page)
  */
-async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null) {
+async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, remainingSeconds = null, isCompleted = false) {
     const userId = getCurrentUserId();
     if (!userId) {
         alert('Silakan login terlebih dahulu');
+        return;
+    }
+
+    // Block access if already completed
+    if (isCompleted) {
+        alert('Anda sudah menyelesaikan quiz ini! Lihat hasil Anda di card module.');
         return;
     }
 

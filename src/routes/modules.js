@@ -266,6 +266,10 @@ router.get('/:id/progress', async (req, res) => {
  *                 enum: [not_started, in_progress, paused, completed]
  *               remaining_seconds:
  *                 type: integer
+ *               right_answer:
+ *                 type: integer
+ *               wrong_answer:
+ *                 type: integer
  *     responses:
  *       200:
  *         description: Progress saved
@@ -273,7 +277,7 @@ router.get('/:id/progress', async (req, res) => {
 router.post('/:id/progress', async (req, res) => {
   try {
     const moduleId = req.params.id;
-    const { user_id, status, remaining_seconds } = req.body;
+    const { user_id, status, remaining_seconds, right_answer, wrong_answer } = req.body;
 
     if (!user_id) {
       return res.status(400).json({
@@ -306,6 +310,14 @@ router.post('/:id/progress', async (req, res) => {
 
       if (status === 'completed') {
         updateData.completed_at = new Date().toISOString();
+        
+        // Save quiz results when completed
+        if (right_answer !== undefined) {
+          updateData.right_answer = right_answer;
+        }
+        if (wrong_answer !== undefined) {
+          updateData.wrong_answer = wrong_answer;
+        }
       }
 
       const { data, error } = await supabase
@@ -319,15 +331,27 @@ router.post('/:id/progress', async (req, res) => {
       result = data;
     } else {
       // Insert new progress
+      const insertData = {
+        user_id,
+        module_id: moduleId,
+        status: status || 'in_progress',
+        remaining_seconds: remaining_seconds,
+        started_at: status === 'in_progress' ? new Date().toISOString() : null
+      };
+
+      if (status === 'completed') {
+        insertData.completed_at = new Date().toISOString();
+        if (right_answer !== undefined) {
+          insertData.right_answer = right_answer;
+        }
+        if (wrong_answer !== undefined) {
+          insertData.wrong_answer = wrong_answer;
+        }
+      }
+
       const { data, error } = await supabase
         .from('user_module_progress')
-        .insert([{
-          user_id,
-          module_id: moduleId,
-          status: status || 'in_progress',
-          remaining_seconds: remaining_seconds,
-          started_at: status === 'in_progress' ? new Date().toISOString() : null
-        }])
+        .insert([insertData])
         .select()
         .single();
 

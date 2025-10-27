@@ -22,7 +22,71 @@ const questions = [
         id: 1,
         title: "Hasil limit",
         formula: "\\lim_{(x,y)\\to(0,0)} \\frac{3x^2 + x^2y + 3y^2 + y^3}{x^2 + y^2} = A",
-        instruction: "Maka $A =$"
+        instruction: "Maka $A =$",
+        correctAnswer: "6" // Contoh jawaban benar
+    },
+    {
+        id: 2,
+        title: "Turunan fungsi",
+        formula: "f(x) = x^3 + 2x^2 - 5x + 1",
+        instruction: "Tentukan $f'(2)$",
+        correctAnswer: "19"
+    },
+    {
+        id: 3,
+        title: "Integral",
+        formula: "\\int (3x^2 + 2x) dx",
+        instruction: "Hasil integral adalah",
+        correctAnswer: "x^3 + x^2 + C"
+    },
+    {
+        id: 4,
+        title: "Persamaan kuadrat",
+        formula: "x^2 - 5x + 6 = 0",
+        instruction: "Akar-akar persamaan adalah",
+        correctAnswer: "2, 3"
+    },
+    {
+        id: 5,
+        title: "Trigonometri",
+        formula: "\\sin^2(x) + \\cos^2(x)",
+        instruction: "Nilai dari ekspresi ini adalah",
+        correctAnswer: "1"
+    },
+    {
+        id: 6,
+        title: "Logaritma",
+        formula: "\\log_2(8)",
+        instruction: "Nilai logaritma adalah",
+        correctAnswer: "3"
+    },
+    {
+        id: 7,
+        title: "Eksponen",
+        formula: "2^5",
+        instruction: "Hasil adalah",
+        correctAnswer: "32"
+    },
+    {
+        id: 8,
+        title: "Kombinasi",
+        formula: "C(5,2)",
+        instruction: "Jumlah kombinasi adalah",
+        correctAnswer: "10"
+    },
+    {
+        id: 9,
+        title: "Matriks",
+        formula: "\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}",
+        instruction: "Determinan matriks adalah",
+        correctAnswer: "-2"
+    },
+    {
+        id: 10,
+        title: "Vektor",
+        formula: "\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos(\\theta)",
+        instruction: "Jika θ = 90°, maka hasilnya",
+        correctAnswer: "0"
     }
 ];
 
@@ -37,6 +101,24 @@ async function loadModuleData() {
         }
         
         const module = JSON.parse(moduleInfo);
+        
+        // Get user ID
+        const userId = getCurrentUserId();
+        if (!userId) {
+            alert('Please login first');
+            window.location.href = '/login';
+            return null;
+        }
+        
+        // Check if module already completed
+        const progressResponse = await fetch(`/api/modules/${module.id}/progress?user_id=${userId}`);
+        const progressResult = await progressResponse.json();
+        
+        if (progressResult.success && progressResult.data && progressResult.data.status === 'completed') {
+            alert('Anda sudah menyelesaikan quiz ini!');
+            window.location.href = '/modules';
+            return null;
+        }
         
         // Fetch full module data from API
         const response = await fetch(`/api/modules/${module.id}`);
@@ -70,6 +152,19 @@ async function loadModuleData() {
     } catch (error) {
         console.error('Error loading module data:', error);
         alert('Failed to load quiz data. Using default settings.');
+        return null;
+    }
+}
+
+// Get current user ID
+function getCurrentUserId() {
+    const user = localStorage.getItem('user');
+    if (!user) return null;
+    
+    try {
+        const userData = JSON.parse(user);
+        return userData.id;
+    } catch (err) {
         return null;
     }
 }
@@ -403,6 +498,37 @@ function loadQuestion(questionNumber) {
     // Update question number display
     document.getElementById('currentQuestionNumber').textContent = questionNumber;
     
+    // Get question from questions array (0-indexed)
+    const question = questions[questionNumber - 1];
+    
+    if (question) {
+        // Update question title
+        const questionTitle = document.querySelector('.question-title');
+        if (questionTitle) {
+            questionTitle.textContent = question.title || `Soal ${questionNumber}`;
+        }
+        
+        // Update question formula with MathJax
+        const questionFormula = document.getElementById('questionFormula');
+        if (questionFormula) {
+            questionFormula.textContent = `$$${question.formula}$$`;
+            // Re-render MathJax for the formula
+            if (window.MathJax) {
+                MathJax.typesetPromise([questionFormula]).catch((err) => console.log('MathJax error:', err));
+            }
+        }
+        
+        // Update question instruction
+        const questionInstruction = document.querySelector('.question-instruction p');
+        if (questionInstruction) {
+            questionInstruction.innerHTML = question.instruction || '';
+            // Re-render MathJax for the instruction
+            if (window.MathJax) {
+                MathJax.typesetPromise([questionInstruction]).catch((err) => console.log('MathJax error:', err));
+            }
+        }
+    }
+    
     // Load saved answer if exists
     const answerInput = document.getElementById('answerInput');
     if (answerInput) {
@@ -434,6 +560,16 @@ function loadQuestion(questionNumber) {
             statusBadge.style.background = 'rgba(255, 193, 7, 0.2)';
             statusBadge.style.color = '#ffc107';
             statusBadge.style.borderColor = 'rgba(255, 193, 7, 0.3)';
+        }
+    }
+    
+    // Update flag button state
+    const flagButton = document.getElementById('flagButton');
+    if (flagButton) {
+        if (quizState.flaggedQuestions.has(questionNumber)) {
+            flagButton.classList.add('flagged');
+        } else {
+            flagButton.classList.remove('flagged');
         }
     }
 }
@@ -509,16 +645,83 @@ function finishQuiz() {
         clearInterval(quizState.timerInterval);
     }
     
-    // Calculate results
+    // Calculate results - compare with correct answers
     const answeredCount = Object.keys(quizState.answers).length;
+    let rightAnswer = 0;
+    let wrongAnswer = 0;
     
-    alert(`Quiz selesai!\nPertanyaan terjawab: ${answeredCount}/${QUIZ_CONFIG.totalQuestions}`);
+    // Check each answer
+    for (let i = 1; i <= QUIZ_CONFIG.totalQuestions; i++) {
+        const userAnswer = quizState.answers[i];
+        const question = questions[i - 1]; // questions array is 0-indexed
+        
+        if (userAnswer && question && question.correctAnswer) {
+            // Simple string comparison (trim and lowercase)
+            const normalizedUserAnswer = userAnswer.trim().toLowerCase();
+            const normalizedCorrectAnswer = question.correctAnswer.trim().toLowerCase();
+            
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                rightAnswer++;
+            } else {
+                wrongAnswer++;
+            }
+        } else if (userAnswer) {
+            // If answered but no correct answer defined, count as wrong
+            wrongAnswer++;
+        }
+    }
+    
+    // Unanswered questions count as wrong
+    const unansweredCount = QUIZ_CONFIG.totalQuestions - answeredCount;
+    wrongAnswer += unansweredCount;
+    
+    // Save to database
+    saveQuizResults(rightAnswer, wrongAnswer);
+    
+    alert(`Quiz selesai!\n\nBenar: ${rightAnswer}\nSalah: ${wrongAnswer}\nTotal: ${QUIZ_CONFIG.totalQuestions}`);
     
     // Remove beforeunload listener
     window.onbeforeunload = null;
     
     // Redirect back to modules page
     window.location.href = '/modules';
+}
+
+// Save quiz results to database
+async function saveQuizResults(rightAnswer, wrongAnswer) {
+    try {
+        const userId = getCurrentUserId();
+        const moduleInfo = sessionStorage.getItem('currentModule');
+        
+        if (!userId || !moduleInfo) {
+            console.error('Missing user or module info');
+            return;
+        }
+        
+        const module = JSON.parse(moduleInfo);
+        
+        const response = await fetch(`/api/modules/${module.id}/progress`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: userId,
+                status: 'completed',
+                remaining_seconds: quizState.timeRemaining,
+                right_answer: rightAnswer,
+                wrong_answer: wrongAnswer
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('Failed to save quiz results:', result.error);
+        }
+    } catch (error) {
+        console.error('Error saving quiz results:', error);
+    }
 }
 
 // Initialize MathJax
@@ -538,6 +741,9 @@ async function initializeQuiz() {
     initializeGraph();
     generateQuestionGrid();
     setupEventListeners();
+    
+    // Load first question
+    loadQuestion(1);
     
     // Initialize MathJax after a short delay
     setTimeout(initializeMathJax, 100);
