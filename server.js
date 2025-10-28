@@ -26,10 +26,13 @@ const port = process.env.PORT || 3000;
 // CORS configuration
 app.use(cors({
   origin: [
-    'https://mathify1.vercel.app/', // Jika masih dipakai
+    'https://mathify1.vercel.app', // Jika masih dipakai
     'https://mathifyfe.vercel.app', // <-- TAMBAHKAN URL BARU DI SINI
     'https://mathify2-production.up.railway.app' // Izinkan backend itu sendiri (opsional)
   ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
   optionsSuccessStatus: 200
 }));
 
