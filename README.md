@@ -43,7 +43,7 @@ Mathify/
 
 ### Prerequisites
 - Node.js (v14 or higher)
-- MongoDB (local or Atlas)
+- Supabase
 
 ### Installation
 
@@ -113,7 +113,7 @@ Server will start at: `http://localhost:3000`
 ## 🛠️ Technologies Used
 
 - **Backend:** Node.js, Express.js
-- **Database:** MongoDB, Mongoose
+- **Database:** Supabase
 - **Frontend:** HTML, CSS, Vanilla JavaScript
 - **Environment:** dotenv
 
@@ -126,31 +126,12 @@ Server will start at: `http://localhost:3000`
 }
 ```
 
-## 🔧 Configuration
-
-### MongoDB Connection
-
-**Local MongoDB:**
-```
-MONGO_URI=mongodb://127.0.0.1:27017/mydatabase
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
 ## 👤 Author
 
 **DerickAmadeus**
 - GitHub: [@DerickAmadeus](https://github.com/DerickAmadeus)
+**Evander**
+- GitHub: [@evander]
 
 ---
 
