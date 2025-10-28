@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
+const cors = require('cors');
 
 // Load environment variables
 dotenv.config();
@@ -81,5 +82,14 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+app.use(cors({
+  origin: [
+    'https://mathify1.vercel.app/', // Jika masih dipakai
+    'https://mathifyfe.vercel.app/', // <-- TAMBAHKAN URL BARU DI SINI
+    'https://mathify2-production.up.railway.app' // Izinkan backend itu sendiri (opsional)
+  ],
+  optionsSuccessStatus: 200
+}));
 
 startServer();
