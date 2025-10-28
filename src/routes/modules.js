@@ -373,6 +373,87 @@ router.post('/:id/progress', async (req, res) => {
 });
 
 /**
+ * POST /api/modules/:id/reset-progress
+ * Reset user progress for a module while keeping history
+ */
+router.post('/:id/reset-progress', async (req, res) => {
+  try {
+    const { id: moduleId } = req.params;
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'user_id is required'
+      });
+    }
+
+    // Get existing progress
+    const { data: existingProgress, error: fetchError } = await supabase
+      .from('user_module_progress')
+      .select('*')
+      .eq('module_id', moduleId)
+      .eq('user_id', user_id)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+    if (existingProgress) {
+      // Move existing progress to history
+      const { error: historyError } = await supabase
+        .from('module_progress_history')
+        .insert([{
+          user_id,
+          module_id: moduleId,
+          right_answer: existingProgress.right_answer,
+          wrong_answer: existingProgress.wrong_answer,
+          completed_at: existingProgress.completed_at,
+          started_at: existingProgress.started_at
+        }]);
+
+      if (historyError) throw historyError;
+
+      // Delete existing progress
+      const { error: deleteError } = await supabase
+        .from('user_module_progress')
+        .delete()
+        .eq('module_id', moduleId)
+        .eq('user_id', user_id);
+
+      if (deleteError) throw deleteError;
+    }
+
+    // Create fresh progress entry
+    const { data: newProgress, error: insertError } = await supabase
+      .from('user_module_progress')
+      .insert([{
+        user_id,
+        module_id: moduleId,
+        status: 'not_started',
+        remaining_seconds: null,
+        right_answer: null,
+        wrong_answer: null
+      }])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    res.json({
+      success: true,
+      data: newProgress,
+      message: 'Progress reset successfully'
+    });
+  } catch (err) {
+    console.error('Error resetting progress:', err);
+    res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
+/**
  * DELETE /api/modules/:id/progress
  * Delete user progress for a module (restart functionality)
  */
