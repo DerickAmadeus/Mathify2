@@ -23,6 +23,17 @@ const graphRoutes = require('./src/routes/graph');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// CORS configuration
+app.use(cors({
+  origin: [
+    'https://mathify1.vercel.app/', // Jika masih dipakai
+    'https://mathifyfe.vercel.app/', // <-- TAMBAHKAN URL BARU DI SINI
+    'https://mathify2-production.up.railway.app' // Izinkan backend itu sendiri (opsional)
+  ],
+  optionsSuccessStatus: 200
+}));
+
+
 // Middleware
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
@@ -82,14 +93,5 @@ const startServer = async () => {
     process.exit(1);
   }
 };
-
-app.use(cors({
-  origin: [
-    'https://mathify1.vercel.app/', // Jika masih dipakai
-    'https://mathifyfe.vercel.app/', // <-- TAMBAHKAN URL BARU DI SINI
-    'https://mathify2-production.up.railway.app' // Izinkan backend itu sendiri (opsional)
-  ],
-  optionsSuccessStatus: 200
-}));
 
 startServer();
