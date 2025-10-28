@@ -84,6 +84,11 @@
                         <!-- Input Section -->
                         <div class="input-section">
                             <h3 class="section-title">Function Input</h3>
+                            <button id="graph-history-toggle" class="history-toggle-btn" title="Graph History">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </button>
                             
                             <!-- Function Input -->
                             <div class="form-group">
@@ -169,6 +174,23 @@
                             </div>
                         </div>
                     </div>
+                </div>
+        </div>
+    </div>
+    <div id="graph-history-modal" class="history-modal">
+        <div class="history-modal-content">
+            <div class="history-modal-header">
+                <h3 class="history-title">Graph History</h3>
+                <div class="history-modal-actions">
+                    <button id="clear-graph-history" class="clear-history-btn">
+                        Clear History
+                    </button>
+                    <button id="close-graph-history" class="close-history-btn">
+                        ×
+                    </button>
+                </div>
+            </div>
+            <div id="graph-history-list" class="history-list">
                 </div>
         </div>
     </div>
