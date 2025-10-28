@@ -162,6 +162,7 @@ async function generateModuleBoxes(modules) {
         let isCompleted = progress && progress.status === 'completed';
         let completedBadge = '';
         let scoreDisplay = '';
+        let retryButton = '';
         
         // If completed, show results and disable button
         if (isCompleted) {
@@ -191,6 +192,18 @@ async function generateModuleBoxes(modules) {
                         </div>
                     </div>
                 `;
+
+                // Add retry button
+                retryButton = `
+                    <button class="soal-btn retry-btn" 
+                            onclick="handleRetry(${module.id}, ${module.duration_minutes})"
+                            style="margin-top: 0.75rem; background-color: #5956d5;">
+                        <span>Coba Lagi</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                `;
             }
         }
         
@@ -216,14 +229,15 @@ async function generateModuleBoxes(modules) {
                     </div>
                 </div>
                 ${scoreDisplay}
-                <button class="soal-btn ${isCompleted ? 'completed' : ''}" id="${buttonId}" 
-                    onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null}, ${isCompleted})"
-                    ${isCompleted ? 'disabled' : ''}>
-                    <span>${buttonText}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${buttonIcon}" />
-                    </svg>
-                </button>
+                ${isCompleted ? retryButton : `
+                    <button class="soal-btn" id="${buttonId}" 
+                        onclick="handleModuleButton(${module.id}, ${module.duration_minutes}, '${timerId}', '${buttonId}', ${progress ? progress.remaining_seconds : null}, ${isCompleted})">
+                        <span>${buttonText}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="btn-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${buttonIcon}" />
+                        </svg>
+                    </button>
+                `}
             </div>
         `;
         
@@ -273,6 +287,57 @@ async function handleModuleButton(moduleId, durationMinutes, timerId, buttonId, 
         
         // Redirect to quiz page
         window.location.href = '/quiz';
+    }
+}
+
+/**
+ * Handle retry button click
+ */
+async function handleRetry(moduleId, durationMinutes) {
+    const userId = getCurrentUserId();
+    if (!userId) {
+        alert('Silakan login terlebih dahulu');
+        return;
+    }
+
+    // Confirm before retrying
+    const confirmed = confirm(
+        'Mulai ulang quiz?\n\n' +
+        'Info:\n' +
+        '- Progress sebelumnya akan tetap tersimpan sebagai riwayat\n' +
+        '- Anda akan memulai quiz dari awal dengan waktu penuh\n' +
+        '- Soal mungkin akan diacak urutannya'
+    );
+
+    if (confirmed) {
+        try {
+            // Reset progress di database
+            const response = await fetch(`/api/modules/${moduleId}/reset-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal mereset progress');
+            }
+
+            // Store module info in sessionStorage
+            sessionStorage.setItem('currentModule', JSON.stringify({
+                id: moduleId,
+                durationMinutes: durationMinutes,
+                remainingSeconds: null // Start with full time
+            }));
+
+            // Redirect to quiz page
+            window.location.href = '/quiz';
+
+        } catch (error) {
+            console.error('Error resetting progress:', error);
+            alert('Gagal memulai ulang quiz. Silakan coba lagi.');
+        }
     }
 }
 
